@@ -1,0 +1,53 @@
+name: Packer
+
+on:
+  push:
+
+env:
+  PKR_VAR_resource_group: mattklup-packerdemo
+
+jobs:
+  packer:
+    runs-on: ubuntu-latest
+    name: packer
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Setup packer variables
+      run: |
+        echo "PKR_VAR_tenant_id=$(echo '${{ secrets.AZURE_SERVICE_PRINCIPAL }}' | jq -r .tenantId)" >> $GITHUB_ENV
+        echo "PKR_VAR_subscription_id=$(echo '${{ secrets.AZURE_SERVICE_PRINCIPAL }}' | jq -r .subscriptionId)" >> $GITHUB_ENV
+        echo "PKR_VAR_client_id=$(echo '${{ secrets.AZURE_SERVICE_PRINCIPAL }}' | jq -r .clientId)" >> $GITHUB_ENV
+        echo "PKR_VAR_client_secret=$(echo '${{ secrets.AZURE_SERVICE_PRINCIPAL }}' | jq -r .clientSecret)" >> $GITHUB_ENV
+
+    - name: Validate Template
+      uses: hashicorp/packer-github-actions@master
+      with:
+        command: validate
+        arguments: -syntax-only
+        target: ./packer/azure-managed/
+
+    - name: Init
+      uses: hashicorp/packer-github-actions@master
+      with:
+        command: init
+        target: ./packer/azure-managed/
+
+    - name: Build Artifact
+      uses: hashicorp/packer-github-actions@master
+      with:
+        command: build
+        arguments: "-color=false -on-error=abort -force"
+        target: ./packer/azure-managed/
+      env:
+        PACKER_LOG: 1
+
+
+    - name: Last step diagnostics
+      if: always()
+      run: |
+        pwd
+        printenv | sort
+        ls -alFR -I.git
