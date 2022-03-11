@@ -16,6 +16,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Setup packer variables
+      if: ${{ false }} # disable leaking secrets, TODO: Move to steps and/or mask the secrets
       run: |
         echo "PKR_VAR_tenant_id=$(echo '${{ secrets.AZURE_SERVICE_PRINCIPAL }}' | jq -r .tenantId)" >> $GITHUB_ENV
         echo "PKR_VAR_subscription_id=$(echo '${{ secrets.AZURE_SERVICE_PRINCIPAL }}' | jq -r .subscriptionId)" >> $GITHUB_ENV
